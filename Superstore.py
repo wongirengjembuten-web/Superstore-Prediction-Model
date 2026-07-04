@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import root_mean_squared_error
+import holidays
+from pandas.tseries.holiday import USFederalHolidayCalendar
 
 
 
@@ -38,6 +40,19 @@ plt.ylabel("Sales")
 plt.legend()
 plt.show()
 
+cal = USFederalHolidayCalendar()
+holiday = cal.holidays(start=df["Order Date"].min(),end=df["Order Date"].max())
+black_f = ["2017-11-24", "2018-11-23", "2019-11-29"]
+
+df["holiday"] = df["Order Date"].isin(holiday)
+df["holiday_flag"] = df["holiday"].astype(int)
+
+df["black_f"] = df["Order Date"].isin(pd.to_datetime(black_f))
+df["black_friday"] = df["black_f"].astype(int)
+
+
+
+
 
 
 df["Month label"] = df["Order Date"].dt.month
@@ -58,10 +73,10 @@ print(training_data)
 print(len(test_data))
 
 
-X_train = training_data.filter(items=["Month label","date label","Year label"])
+X_train = training_data.filter(items=["Month label","date label","Year label","holiday_flag","black_friday"])
 y_train = training_data.filter(items=["Sales_y"])
 
-X_test = test_data.filter(items=["Month label","date label","Year label"])
+X_test = test_data.filter(items=["Month label","date label","Year label","holiday_flag","black_friday"])
 y_test = test_data.filter(items=["Sales_y"])
 
 model = RandomForestRegressor(n_estimators=200,random_state=42)
@@ -82,17 +97,17 @@ print("RMSE:", rmse)
 
 
 
-predicted_date = np.arange('2019-01-01', '2023-12-30', dtype='datetime64[D]')
+predicted_date = np.arange('2019-01-01', '2019-12-30', dtype='datetime64[D]')
 
 prediction_data = {"Prediction Date" : predicted_date,
-                 "Sales prediction" : prediction[:1824]
+                 "Sales prediction" : prediction[:363]
                  }
 
 prediction_df = pd.DataFrame(prediction_data)
 
 
 print(len(predicted_date))
-print(len(prediction[:1824]))
+print(len(prediction[:363]))
 print(prediction_df.info())
 
 prediction_plot = prediction_df.groupby("Prediction Date")["Sales prediction"].sum()
@@ -108,7 +123,6 @@ plt.plot(rolling30_p, label="30-Day Rolling Average(prediction)", linewidth=2)
 plt.title("Sales Prediction")
 plt.xlabel("Date")
 plt.ylabel("Sales")
-plt.ylim(0,25000)
 plt.legend(loc="upper right")
 plt.show()
 
